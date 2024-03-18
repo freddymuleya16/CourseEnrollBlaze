@@ -1,0 +1,141 @@
+﻿@page "/register" 
+@layout EmptyLayout 
+@inject HttpClient httpClient
+@inject AuthenticationStateProvider authStateProvider
+@inject NavigationManager navigationManager
+@inject IJSRuntime js
+
+<main class="main-content  mt-0">
+    <section>
+        <div class="page-header min-vh-100">
+            <div class="container">
+                <div class="row">
+                    <div class="col-6 d-lg-flex d-none h-100 my-auto pe-0 position-absolute top-0 start-0 text-center justify-content-center flex-column">
+                        <div class="position-relative bg-gradient-primary h-100 m-3 px-7 border-radius-lg d-flex flex-column justify-content-center"
+                             style="background-image: url('../assets/img/illustrations/illustration-signup.jpg'); background-size: cover;">
+                        </div>
+                    </div>
+                    <div class="col-xl-4 col-lg-5 col-md-7 d-flex flex-column ms-auto me-auto ms-lg-auto me-lg-5">
+                        <div class="card card-plain">
+                            <div class="card-header">
+                                <h4 class="font-weight-bolder">Sign Up</h4>
+                                <p class="mb-0">Enter your email and password to register</p>
+                            </div>
+                            <div class="card-body">
+                                <EditForm Model="@loginModel" OnValidSubmit="HandleSubmit" role="form">
+                                    <DataAnnotationsValidator />
+                                    <ValidationSummary />
+                                    <div class="input-group input-group-outline justify-content-between mb-3 w-100">
+                                        <InputRadioGroup @bind-Value="loginModel.Role">
+                                            <div class="form-check mb-3 p-0">
+                                                <InputRadio Value="Student" class="form-check-input" />
+                                                <label class="custom-control-label" for="customRadio1">Student</label>
+                                            </div>
+                                            <div class="form-check mb-3 p-0">
+                                                <InputRadio Value="Instructor" class="form-check-input" />
+                                                <label class="custom-control-label" for="customRadio2">Instructor</label>
+                                            </div>
+                                        </InputRadioGroup>
+
+
+
+
+                                    </div>
+
+                                    <div class="input-group input-group-outline mb-3">
+                                        <label class="static-label">Firstname</label>
+                                        <InputText  onfocus="focused(this)" onfocusout="defocused(this)"  @bind-Value="loginModel.FirstName" type="text" class="form-control" />
+                                        <span class="font-weight-bold mt-1 text-xs w-100">
+                                            <ValidationMessage For="@(() => loginModel.FirstName)" />
+                                        </span>
+                                    </div>
+                                    <div class="input-group input-group-outline mb-3">
+                                        <label class="static-label">LastName</label>
+                                        <InputText  onfocus="focused(this)" onfocusout="defocused(this)"  @bind-Value="loginModel.LastName" type="text" class="form-control" />
+                                        <span class="font-weight-bold mt-1 text-xs w-100">
+                                            <ValidationMessage class="font-weight-bold mt-1 text-xs w-100" For="@(() => loginModel.LastName)" />
+                                        </span>
+                                    </div>
+                                    <div class="input-group input-group-outline mb-3">
+                                        <label class="static-label">Email</label>
+                                        <InputText  onfocus="focused(this)" onfocusout="defocused(this)"  @bind-Value="loginModel.Email" type="text" class="form-control" />
+                                        <span class="font-weight-bold mt-1 text-xs w-100">
+                                            <ValidationMessage class="font-weight-bold mt-1 text-xs w-100" For="@(() => loginModel.Email)" />
+                                        </span>
+                                    </div>
+                                    <div class="input-group input-group-outline mb-3">
+                                        <label class="static-label">Password</label>
+                                        <InputText  onfocus="focused(this)" onfocusout="defocused(this)"  @bind-Value="loginModel.Password" type="password" class="form-control" />
+                                        <span class="font-weight-bold mt-1 text-xs w-100">
+                                            <ValidationMessage class="font-weight-bold mt-1 text-xs w-100" For="@(() => loginModel.Password)" />
+                                        </span>
+                                    </div>
+                                    <div class="input-group input-group-outline mb-3">
+                                        <label class="static-label">Confirm Password</label>
+                                        <InputText  onfocus="focused(this)" onfocusout="defocused(this)"  @bind-Value="loginModel.ConfirmPassword" type="password" class="form-control" />
+                                        <span class="font-weight-bold mt-1 text-xs w-100">
+                                            <ValidationMessage For="@(() => loginModel.ConfirmPassword)" />
+                                        </span>
+
+                                    </div>
+
+
+                                    <div class="form-check form-check-info text-start ps-0">
+                                        <InputCheckbox @bind-Value="loginModel.AgreeToTermsAndConditions" class="form-check-input" type="checkbox" id="flexCheckDefault" checked />
+                                        <label class="form-check-label" for="flexCheckDefault">
+                                            I agree the <a href="javascript:;" class="text-dark font-weight-bolder">Terms and Conditions</a>
+                                        </label>
+                                    </div>
+                                    <span class="font-weight-bold mt-1 text-xs w-100">
+                                        <ValidationMessage For="@(() => loginModel.AgreeToTermsAndConditions)" />
+                                    </span>
+                                    <div class="text-center">
+                                        <button type="submit" class="btn btn-lg bg-gradient-primary btn-lg w-100 mt-4 mb-0">
+                                            Sign
+                                            Up
+                                        </button>
+                                    </div>
+                                </EditForm>
+                            </div>
+                            <div class="card-footer text-center pt-0 px-lg-2 px-1">
+                                <p class="mb-2 text-sm mx-auto">
+                                    Already have an account?
+                                    <a href="/login" class="text-primary text-gradient font-weight-bold">Sign in</a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+@code {
+    private RegisterRequest loginModel = new RegisterRequest();
+    string Student = "Student";
+    string Instructor = "Instructor";
+    private async Task HandleSubmit()
+    {
+        var result = await httpClient.PostAsJsonAsync("/api/UserAccount/Register", loginModel);
+
+        if (result.IsSuccessStatusCode)
+        {
+            var userSession = await result.Content.ReadFromJsonAsync<UserSession>();
+            var customAuthStateProvider = (CustomAuthenticationState)authStateProvider;
+            await customAuthStateProvider.UpdateAuthenticationState(userSession);
+            navigationManager.NavigateTo("/", true);
+
+
+        }
+        else if (result.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            await js.InvokeVoidAsync("alert", "Invalid Email or Password");
+            return;
+            // Handle login failure, show error message to the user
+            // Example: Display error message in a toast notification
+            // Example: Set error message in a property to display in the UI
+            // Example: Clear password field and focus on email field
+        }
+    }
+}

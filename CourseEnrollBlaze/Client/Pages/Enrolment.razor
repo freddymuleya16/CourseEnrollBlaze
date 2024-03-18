@@ -1,0 +1,118 @@
+﻿@page "/enrollment"
+@inject HttpClient httpClient
+@inject AuthenticationStateProvider authStateProvider
+@inject ISweetAlertService SweetAlert
+@attribute [Authorize(Roles = "Student")]
+
+@code {
+    private Course[] availableCourses = Array.Empty<Course>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAvailableCoursesAsync();
+    }
+
+    private async Task LoadAvailableCoursesAsync()
+    {
+        var customAuthStateProvider = (CustomAuthenticationState)authStateProvider;
+        var token = await customAuthStateProvider.GetTokenAsync();
+        var session = await customAuthStateProvider.GetAuthenticationStateAsync();
+
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            var userId = session.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("bearer", token);
+            var response = await httpClient.GetFromJsonAsync<Course[]>($"/api/course/notenrolled?userId={userId}");
+
+            if (response != null)
+            {
+                availableCourses = response;
+            } 
+        } 
+    }
+
+    private async Task Enroll(Guid courseId)
+    {
+        var customAuthStateProvider = (CustomAuthenticationState)authStateProvider;
+        var token = await customAuthStateProvider.GetTokenAsync();
+        var session = await customAuthStateProvider.GetAuthenticationStateAsync();
+
+        var userId = session.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (userId == null) return;
+
+        var result = await httpClient.PostAsJsonAsync("/api/Course/enroll", new EnrollCourseRequest { CourseId = courseId, UserId = Guid.Parse(userId) });
+
+        if (result.IsSuccessStatusCode)
+        {
+            await SweetAlert.ShowAlert("Enrollment Successful", "You have successfully enrolled in the course.", SweetAlertIcon.Success);
+            await LoadAvailableCoursesAsync();
+        }
+        else
+        {
+            await SweetAlert.ShowAlert("Enrollment Failed", "There was an error while enrolling in the course. Please try again later.", SweetAlertIcon.Error);
+
+
+        }
+    }
+
+    private string GetFormattedDate(DateTime date)
+    {
+        return date.ToString("yyyy-MM-dd"); // Customize date format as needed
+    }
+}
+
+<div class="row">
+    <div class="col-md-12 mt-4">
+        <div class="card">
+            <div class="card-header pb-0 px-3">
+                <h6 class="mb-0">My Courses</h6>
+            </div>
+            <div class="card-body pt-4 p-3">
+
+                <ul class="list-group">
+                    @foreach (var course in availableCourses)
+                    {
+                        <li class="list-group-item border-0 d-flex p-4 mb-2 bg-gray-100 border-radius-lg">
+                            <div class="d-flex flex-column">
+                                <h6 class="mb-3 text-sm">@course.Name</h6>
+                                <span class="mb-2 text-xs">Description: <span class="text-dark font-weight-bold ms-sm-2">@course.Description</span></span>
+                                <span class="mb-2 text-xs">Start Date: <span class="text-dark ms-sm-2 font-weight-bold">@GetFormattedDate(course.StartDate)</span></span>
+                                <span class="mb-2 text-xs">End Date: <span class="text-dark ms-sm-2 font-weight-bold">@GetFormattedDate(course.EndDate)</span></span>
+                                <span class="text-xs">Slots Remaining: <span class="text-dark ms-sm-2 font-weight-bold">@course.MaxStudents</span></span>
+                            </div>
+                            <div class="ms-auto text-end">
+                                <button @onclick="() => Enroll(course.Id)" class="btn btn-icon btn-3 btn-primary btn-lg" type="button">
+                                    <span class="btn-inner--text">Enroll</span>
+                                </button>
+                            </div>
+                        </li>
+                    }
+                    @if (availableCourses == null)
+                    {
+                        <li class="list-group-item border-0 d-flex p-4 mb-2 bg-gray-100 border-radius-lg">
+                            <div class="d-flex px-2 py-1">
+
+                                <div class="d-flex flex-column justify-content-center align-items-center w-100">
+                                    <h6 class="mb-0 text-sm">Loading...</h6>
+                                </div>
+                            </div>
+                        </li>
+                    }
+                    @if (availableCourses?.Length == 0)
+                    {
+                        <li class="list-group-item border-0 d-flex p-4 mb-2 bg-gray-100 border-radius-lg">
+                            <div class="d-flex px-2 py-1">
+
+                                <div class="d-flex flex-column justify-content-center align-items-center w-100">
+                                    <h6 class="mb-0 text-sm">No Available courses currently</h6>
+                                </div>
+                            </div>
+                        </li>
+                    }
+                </ul>
+
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,11 @@
+﻿<div class="loading-overlay">
+    <div class="loading">
+        <div class="spinner"></div>
+        <div class="message">@Message</div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Message { get; set; } = "Loading...";
+}
